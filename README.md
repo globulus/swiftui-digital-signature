@@ -16,7 +16,11 @@
 
 ## Installation
 
-This component is distributed as a **Swift package**.
+This component is distributed as a **Swift package**. Just add the repo URL to your package list:
+
+```text
+https://github.com/globulus/swiftui-digital-signature
+```
 
 ## Sample usage
 
@@ -40,3 +44,10 @@ struct SignatureViewTest: View {
   }
 }
 ```
+
+## Changelog
+
+* 0.1.1 - Fixed drawing bounds.
+* 0.1.0 - Initial release.
+
+Check out [SwiftUIRecipes.com](https://swiftuirecipes.com) for more SwiftUI solutions, tips and custom components!

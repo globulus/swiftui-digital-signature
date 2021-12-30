@@ -58,10 +58,6 @@ public struct SignatureView: View {
                     FontFamilyPicker(selection: $fontFamily)
                 }
                 ColorPickerCompat(selection: $color)
-//                Toggle(isOn: $saveSignature) {
-//                    Text("Save on done")
-//                        .frame(maxWidth: .infinity, alignment: .trailing)
-//                }
             }
             Spacer()
         }.padding()
@@ -114,7 +110,10 @@ public struct SignatureView: View {
                              NSAttributedString.Key.foregroundColor: color.uiColor,
                              NSAttributedString.Key.paragraphStyle: paragraphStyle
                 ]
-                text.draw(with: CGRect(x: 0, y: 0, width: rendererWidth, height: rendererHeight), options: .usesLineFragmentOrigin, attributes: attrs, context: nil)
+                text.draw(with: CGRect(x: 0, y: 0, width: rendererWidth, height: rendererHeight),
+                          options: .usesLineFragmentOrigin,
+                          attributes: attrs,
+                          context: nil)
             }
             image = uiImage
         }
@@ -207,33 +206,55 @@ struct FontFamilyPicker: View {
     }
 }
 
+struct FramePreferenceKey: PreferenceKey {
+  static var defaultValue: CGRect = .zero
+
+  static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+    value = nextValue()
+  }
+}
+
 struct SignatureDrawView: View {
-    @Binding var drawing: DrawingPath
-    @Binding var fontFamily: String
-    @Binding var color: Color
+  @Binding var drawing: DrawingPath
+  @Binding var fontFamily: String
+  @Binding var color: Color
+  
+  @State private var drawingBounds: CGRect = .zero
     
     var body: some View {
-        return ZStack {
-            Color.white
-            if drawing.isEmpty {
-                Text(placeholderText)
-                    .foregroundColor(.gray)
-                    .font(.custom(fontFamily, size: bigFontSize))
-            } else {
-                DrawShape(drawingPath: drawing)
-                    .stroke(lineWidth: lineWidth)
-                    .foregroundColor(color)
-            }
-        }.frame(height: maxHeight)
-        .gesture(DragGesture()
-            .onChanged( { value in
-                drawing.addPoint(value.location)
-            }).onEnded( { value in
-                drawing.addBreak()
-            }))
-        .overlay(RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.gray))
-    }
+      ZStack {
+        Color.white
+          .background(GeometryReader { geometry in
+            Color.clear.preference(key: FramePreferenceKey.self,
+                                   value: geometry.frame(in: .local))
+          })
+          .onPreferenceChange(FramePreferenceKey.self) { bounds in
+            drawingBounds = bounds
+          }
+        if drawing.isEmpty {
+          Text(placeholderText)
+            .foregroundColor(.gray)
+            .font(.custom(fontFamily, size: bigFontSize))
+        } else {
+          DrawShape(drawingPath: drawing)
+            .stroke(lineWidth: lineWidth)
+            .foregroundColor(color)
+        }
+      }
+      .frame(height: maxHeight)
+      .gesture(DragGesture()
+        .onChanged( { value in
+          if drawingBounds.contains(value.location) {
+            drawing.addPoint(value.location)
+          } else {
+            drawing.addBreak()
+          }
+        }).onEnded( { value in
+          drawing.addBreak()
+        }))
+      .overlay(RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.gray))
+  }
 }
 
 struct DrawingPath {
