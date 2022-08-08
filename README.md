@@ -31,11 +31,12 @@ struct SignatureViewTest: View {
   var body: some View {
     NavigationView {
       VStack {
-        NavigationLink("GO", destination: SignatureView(onSave: { image in
-          self.image = image
-        }, onCancel: {
-                
-        }))
+        NavigationLink("GO", destination: SignatureView(availableTabs: [.draw, .image, .type],
+          onSave: { image in
+            self.image = image
+          }, onCancel: {
+                  
+          }))
         if image != nil {
             Image(uiImage: image!)
         }
@@ -47,6 +48,7 @@ struct SignatureViewTest: View {
 
 ## Changelog
 
+* 0.1.2 - Added `availableTabs` initializer param.
 * 0.1.1 - Fixed drawing bounds.
 * 0.1.0 - Initial release.
 

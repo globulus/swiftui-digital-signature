@@ -16,11 +16,11 @@ private let maxHeight: CGFloat = 160
 private let lineWidth: CGFloat = 5
 
 public struct SignatureView: View {
+  public let availableTabs: [Tab]
     public let onSave: (UIImage) -> Void
     public let onCancel: () -> Void
     
-    @State private var selectedTab = 0
-    private let tabTitles = ["Draw", "Image", "Type"]
+  @State private var selectedTab: Tab
     
     @State private var saveSignature = false
     
@@ -32,11 +32,15 @@ public struct SignatureView: View {
     @State private var isImageSet = false
     @State private var text = ""
     
-    public init(onSave: @escaping (UIImage) -> Void,
-                onCancel: @escaping () -> Void) {
-        self.onSave = onSave
-        self.onCancel = onCancel
-    }
+  public init(availableTabs: [Tab] = Tab.allCases,
+              onSave: @escaping (UIImage) -> Void,
+              onCancel: @escaping () -> Void) {
+    self.availableTabs = availableTabs
+    self.onSave = onSave
+    self.onCancel = onCancel
+    
+    self.selectedTab = availableTabs.first!
+  }
     
     public var body: some View {
         VStack {
@@ -45,16 +49,18 @@ public struct SignatureView: View {
                 Spacer()
                 Button("Cancel", action: onCancel)
             }
+          if availableTabs.count > 1 {
             Picker(selection: $selectedTab, label: EmptyView()) {
-                ForEach(tabTitles, id: \.self) { tab in
-                    Text(tab)
-                        .tag(tabTitles.firstIndex(of: tab)!)
+                ForEach(availableTabs, id: \.self) { tab in
+                  Text(tab.title)
+                    .tag(tab)
                 }
             }.pickerStyle(SegmentedPickerStyle())
+          }
             signatureContent
             Button("Clear signature", action: clear)
             HStack {
-                if selectedTab == Tab.type.rawValue {
+                if selectedTab == Tab.type {
                     FontFamilyPicker(selection: $fontFamily)
                 }
                 ColorPickerCompat(selection: $color)
@@ -64,15 +70,14 @@ public struct SignatureView: View {
     }
     
     private var signatureContent: some View {
-        let tab = Tab(rawValue: selectedTab)
         return Group {
-            if tab == .draw {
+            if selectedTab == .draw {
                 SignatureDrawView(drawing: $drawing,
                                   fontFamily: $fontFamily,
                                   color: $color)
-            } else if tab == .image {
+            } else if selectedTab == .image {
                 SignatureImageView(isSet: $isImageSet, selection: $image)
-            } else if tab == .type {
+            } else if selectedTab == .type {
                 SignatureTypeView(text: $text,
                                   fontFamily: $fontFamily,
                                   color: $color)
@@ -81,9 +86,8 @@ public struct SignatureView: View {
     }
     
     private func extractImageAndHandle() {
-        guard let tab = Tab(rawValue: selectedTab) else { return }
         let image: UIImage
-        switch tab {
+        switch selectedTab {
         case .draw:
             let path = drawing.cgPath
             let maxX = drawing.points.map { $0.x }.max() ?? 0
@@ -134,9 +138,20 @@ public struct SignatureView: View {
         text = ""
     }
     
-    private enum Tab: Int {
-        case draw = 0, image, type
+  public enum Tab: CaseIterable, Hashable {
+    case draw, image, type
+    
+    var title: LocalizedStringKey {
+      switch self {
+      case .draw:
+        return "Draw"
+      case .image:
+        return "Image"
+      case .type:
+        return "Type"
+      }
     }
+  }
 }
 
 struct ColorPickerCompat: View {
@@ -401,7 +416,7 @@ struct SignatureViewTest: View {
     var body: some View {
         NavigationView {
             VStack {
-                NavigationLink("GO", destination: SignatureView(onSave: { image in
+              NavigationLink("GO", destination: SignatureView(availableTabs: [.draw, .image, .type], onSave: { image in
                     self.image = image
                 }, onCancel: {
                     
